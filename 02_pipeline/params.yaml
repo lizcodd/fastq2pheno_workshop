@@ -1,0 +1,8 @@
+# nf-core/atacseq 2.1.2 parameters for the COLO320DM vs COLO320HSR run.
+# The reference genome (fasta, bwa_index, gtf) is set in local.config (see local.config.example).
+input:       samplesheet.csv
+outdir:      results
+blacklist:   hg38-blacklist.v3.bed   # ENCODE problem regions, copied from the pipeline's assets
+mito_name:   chrM                    # remove mitochondrial reads
+macs_gsize:  2.7e9                   # effective human genome size for MACS2 peak calling
+narrow_peak: true                    # ATAC peaks are narrow; the pipeline default is broad

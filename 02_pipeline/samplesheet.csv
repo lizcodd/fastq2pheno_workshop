@@ -1,0 +1,5 @@
+sample,fastq_1,fastq_2,replicate
+COLO320DM,../01_data/fastq/SRR8236757_1.fastq.gz,../01_data/fastq/SRR8236757_2.fastq.gz,1
+COLO320DM,../01_data/fastq/SRR8236758_1.fastq.gz,../01_data/fastq/SRR8236758_2.fastq.gz,2
+COLO320HSR,../01_data/fastq/SRR9140502_1.fastq.gz,../01_data/fastq/SRR9140502_2.fastq.gz,1
+COLO320HSR,../01_data/fastq/SRR9140503_1.fastq.gz,../01_data/fastq/SRR9140503_2.fastq.gz,2

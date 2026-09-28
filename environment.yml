@@ -1,0 +1,27 @@
+# Conda environment for the fastq2pheno workshop
+#   conda env create -f environment.yml     (or, to add new packages later: conda env update -f environment.yml)
+#   conda activate fastq2pheno
+name: fastq2pheno
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  # Step 1: download
+  - sra-tools              # prefetch, fasterq-dump: download from SRA
+  - pigz                   # multi-CPU gzip
+  # Step 2: pipeline
+  - nextflow               # runs nf-core pipelines (brings Java with it)
+  # Step 3: differential peaks, in an R notebook (Colab installs these itself)
+  - r-base=4.4
+  - bioconductor-deseq2    # differential testing
+  - r-dplyr                # tables
+  - r-tidyr                # reshaping tables
+  - r-ggplot2              # plots
+  - r-patchwork            # stack aligned plots
+  - homer                  # motif enrichment
+  - r-irkernel             # lets Jupyter run R
+  - jupyterlab             # notebooks
+  # Building the notebooks' data (03_differential/prep/, 04_ai_models/ inputs)
+  - bedtools               # count reads in genome windows
+  - samtools               # BAM utilities
+  - bwa                    # align the WGS reads

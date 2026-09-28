@@ -1,0 +1,42 @@
+# fastq2pheno workshop: git tracks scripts, notebooks, READMEs and small hand-made inputs.
+# Everything below is downloaded, rebuilt by the scripts, or scratch.
+
+# scratch
+exploration/
+
+# Step 1-2: downloads and pipeline output
+01_data/fastq/
+02_pipeline/results/
+02_pipeline/work/
+02_pipeline/.nextflow*
+02_pipeline/igv_local/
+02_pipeline/igv_local.tar
+02_pipeline/containers/
+02_pipeline/local.config
+
+# Step 3: data built by prep/ (the archive goes to Google Drive), and outputs of running the notebook
+03_differential/data/
+03_differential/*.tar.gz
+03_differential/prep/work/
+03_differential/prep/wgs/*.bam
+03_differential/prep/wgs/*.bam.bai
+03_differential/prep/wgs/*.flagstat.txt
+03_differential/prep/aa/COLO320*/
+03_differential/prep/aa/aa_data_repo/
+03_differential/homer*/
+03_differential/homer_*.log
+03_differential/*.fa
+03_differential/*.bed
+03_differential/differential_peaks.tsv
+
+# Step 4: trained models and interpretation, the notebook's data bundle
+04_ai_models/results/
+04_ai_models/data/
+04_ai_models/*.tar.gz
+04_ai_models/prep/work/
+
+# anywhere
+*.sif
+logs/
+.ipynb_checkpoints/
+__pycache__/

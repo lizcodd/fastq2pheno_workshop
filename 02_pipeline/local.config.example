@@ -1,0 +1,10 @@
+// Copy to local.config and fill in. local.config is not in git; run.sbatch loads it.
+
+// Reference genome: GRCh38 with UCSC chromosome names (chr1, chrM) and no alternate haplotypes,
+// its BWA index folder, and a gene annotation (GTF).
+// Without these files, use  genome = 'GRCh38'  and  read_length = 50  instead (downloaded from AWS iGenomes).
+params {
+    fasta     = '/path/to/genome.fa'
+    bwa_index = '/path/to/bwa_index'
+    gtf       = '/path/to/genes.gtf.gz'
+}
