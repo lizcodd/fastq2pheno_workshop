@@ -21,7 +21,7 @@ dependencies:
   - homer                  # motif enrichment
   - r-irkernel             # lets Jupyter run R
   - jupyterlab             # notebooks
-  # Building the notebooks' data (03_differential/prep/, 04_ai_models/ inputs)
+  # Building the notebooks' data (03_differential/prep/, 04_sequence_models/ inputs)
   - bedtools               # count reads in genome windows
   - samtools               # BAM utilities
   - bwa                    # align the WGS reads

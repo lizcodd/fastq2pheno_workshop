@@ -7,8 +7,8 @@
 #SBATCH --time=2-00:00:00
 #SBATCH --array=1-2
 #SBATCH --output=logs/model_%a.log
-# One chromBPNet model per line (both replicates pooled, fold 0): train, evaluate, then contribution scores on all
-# its peaks (counts + profile). About 12 GPU-hours per model on an L40S. The steps are separate, and each is skipped
+# One chromBPNet model per line (both replicates pooled, fold 0), both trained on the same consensus peaks: train,
+# evaluate, then contribution scores on all peaks (counts + profile). About 12 GPU-hours per model on an L40S. The steps are separate, and each is skipped
 # when its output exists, so a job stopped by a GPU time limit continues where it left off when resubmitted.
 # Without time limits, `chrombpnet pipeline` does training, evaluation and profile motifs in one command.
 # Output: ../results/chrombpnet/models/<line>_fold0/ and ../results/chrombpnet/contribs/<line>_fold0/
@@ -26,7 +26,7 @@ I=../results/chrombpnet/inputs; m=../results/chrombpnet/models/$id; c=../results
 if [ ! -f $m/models/chrombpnet_nobias.h5 ]; then
     [ -d "$m" ] && { echo "$m exists but is incomplete; move it aside"; exit 1; }
     cb chrombpnet train -ibam $I/$line.main.bam -d ATAC -g $I/genome.fa -c $I/chrom.sizes \
-        -p $I/${line}_peaks.narrowPeak -n $I/${line}_nonpeaks_negatives.bed \
+        -p $I/consensus_peaks.narrowPeak -n $I/consensus_nonpeaks_negatives.bed \
         -fl $I/folds/fold_0.json -b $I/bias_fold_0.h5 -o $m --tmpdir "${TMPDIR:-/tmp}"
     echo "$id trained"
 fi
@@ -37,7 +37,7 @@ if [ ! -f $m/evaluation/chrombpnet_metrics.json ]; then
         -fl $I/folds/fold_0.json -o $m
     echo "$id evaluated"
 fi
-# Contribution scores of the bias-free model on all of the line's peaks
+# Contribution scores of the bias-free model on all peaks
 if [ ! -f $c/$id.profile_scores.bw ]; then
     mkdir -p $c
     cb chrombpnet contribs_bw -m $m/models/chrombpnet_nobias.h5 -r $m/auxiliary/filtered.peaks.bed \

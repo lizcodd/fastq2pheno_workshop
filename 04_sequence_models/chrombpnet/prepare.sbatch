@@ -5,7 +5,8 @@
 #SBATCH --mem=32G
 #SBATCH --time=04:00:00
 #SBATCH --output=logs/prepare_%j.log
-# Prepare chromBPNet inputs for each line from the nf-core/atacseq results (Step 2), in ../results/chrombpnet/inputs.
+# Prepare chromBPNet inputs from the nf-core/atacseq results (Step 2), in ../results/chrombpnet/inputs: each line's
+# reads, and the peaks and background regions both lines' models train on.
 # Submit from this folder:  sbatch prepare.sbatch
 set -euo pipefail
 module load miniforge/25.11.0-0 apptainer/1.5.2
@@ -41,18 +42,21 @@ cat <(grep -P '^chr([0-9]+|X)\t' ../../02_pipeline/hg38-blacklist.v3.bed | cut -
     | sort -k1,1 -k2,2n > $I/exclude.bed
 bedtools slop -i $I/exclude.bed -g $I/chrom.sizes -b 1057 > $I/exclude_ext.bed
 
+# Reads (both replicates merged) of each line on chr1-22 and X only: chromBPNet can't handle the small unplaced contigs
 for s in COLO320DM COLO320HSR; do
-    # Reads (both replicates merged) on chr1-22 and X only: chromBPNet can't handle the small unplaced contigs
     samtools view -@ 8 -b -o $I/$s.main.bam $RES/bwa/merged_replicate/$s.mRp.clN.sorted.bam $(cut -f1 $I/chrom.sizes)
     samtools index $I/$s.main.bam
-    # Peaks: the line's MACS2 peaks whose 2,114 bp model window stays clear of excluded regions and chromosome ends
-    grep -P '^chr([0-9]+|X)\t' $RES/bwa/merged_replicate/macs2/narrow_peak/$s.mRp.clN_peaks.narrowPeak \
-      | bedtools intersect -v -a - -b $I/exclude_ext.bed \
-      | awk -v OFS='\t' -v sizes=$I/chrom.sizes 'BEGIN { while ((getline < sizes) > 0) L[$1] = $2 }
-                                                  { c = $2 + $10; if (c - 1057 > 0 && c + 1057 < L[$1]) print }' \
-      | sort -k1,1 -k2,2n > $I/${s}_peaks.narrowPeak
-    # Background regions matched to the peaks' GC content (fold 0)
-    cb chrombpnet prep nonpeaks -g $I/genome.fa -p $I/${s}_peaks.narrowPeak -c $I/chrom.sizes \
-        -fl $I/folds/fold_0.json -br $I/exclude.bed -o $I/${s}_nonpeaks
-    echo "$s: $(wc -l < $I/${s}_peaks.narrowPeak) peaks, $(wc -l < $I/${s}_nonpeaks_negatives.bed) background regions"
 done
+
+# Peaks: both lines' models train on the same regions, the consensus peaks of all four samples (Step 2), so the two
+# models differ only in the reads they learn from. Kept when the 2,114 bp model window stays clear of excluded regions
+# and chromosome ends; consensus peaks have no summit, so the model window is centered on the middle of the peak.
+grep -P '^chr([0-9]+|X)\t' $RES/bwa/merged_library/macs2/narrow_peak/consensus/consensus_peaks.mLb.clN.bed \
+  | bedtools intersect -v -a - -b $I/exclude_ext.bed \
+  | awk -v OFS='\t' -v sizes=$I/chrom.sizes 'BEGIN { while ((getline < sizes) > 0) L[$1] = $2 }
+      { s = int(($3 - $2) / 2); c = $2 + s; if (c - 1057 > 0 && c + 1057 < L[$1]) print $1, $2, $3, $4, 0, ".", 0, 0, 0, s }' \
+  | sort -k1,1 -k2,2n > $I/consensus_peaks.narrowPeak
+# Background regions matched to the peaks' GC content (fold 0)
+cb chrombpnet prep nonpeaks -g $I/genome.fa -p $I/consensus_peaks.narrowPeak -c $I/chrom.sizes \
+    -fl $I/folds/fold_0.json -br $I/exclude.bed -o $I/consensus_nonpeaks
+echo "$(wc -l < $I/consensus_peaks.narrowPeak) peaks, $(wc -l < $I/consensus_nonpeaks_negatives.bed) background regions"

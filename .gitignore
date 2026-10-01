@@ -30,10 +30,10 @@ exploration/
 03_differential/differential_peaks.tsv
 
 # Step 4: trained models and interpretation, the notebook's data bundle
-04_ai_models/results/
-04_ai_models/data/
-04_ai_models/*.tar.gz
-04_ai_models/prep/work/
+04_sequence_models/results/
+04_sequence_models/data/
+04_sequence_models/*.tar.gz
+04_sequence_models/prep/work/
 
 # anywhere
 *.sif

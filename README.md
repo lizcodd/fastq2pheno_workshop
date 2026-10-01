@@ -1,16 +1,30 @@
 # fastq2pheno: bulk ATAC-seq from FASTQ to biology
 
 A worked example of a bulk ATAC-seq analysis on MIT's Engaging cluster: download the reads, run a standard
-Nextflow pipeline, check QC, find differential peaks, then use deep-learning models (chromBPNet and
-seq2PRINT) to ask which DNA sequences drive accessibility. Step 4 is in progress.
+Nextflow pipeline, check QC, find differential peaks, then use a deep-learning model (chromBPNet)
+to ask which DNA sequences drive accessibility.
+
+## Workshop session
+
+Steps 1 and 2 (download, pipeline) run on the cluster and take hours, so the live session starts from their output:
+
+1. **Part 1: Quality control.** Open the pipeline's [MultiQC report](02_pipeline/multiqc_report.html) and review it
+   together (on GitHub: download the raw file, then open it in a browser). What to look for:
+   [Check quality with MultiQC](#check-quality-with-multiqc).
+2. **Part 2: Standard analysis.** Differential peaks with DESeq2, technical biases, copy number and motifs (R, about
+   5 minutes to run). [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lizcodd/fastq2pheno_workshop/blob/main/03_differential/differential_atac.ipynb)
+3. **Part 3: AI sequence models.** chromBPNet: which DNA sequences open chromatin in each line (Python, CPU only).
+   [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lizcodd/fastq2pheno_workshop/blob/main/04_sequence_models/chrombpnet.ipynb)
+
+The rest of this README documents every step, to rerun the analysis or adapt it to other data.
 
 ```
 fastq2pheno_workshop/
-  environment.yml   conda env with the tools used outside the pipeline
-  01_data/          Step 1: sample table, download script
-  02_pipeline/      Step 2: nf-core/atacseq
-  03_differential/  Step 3: differential peaks (notebook)
-  04_ai_models/     Step 4: sequence models of accessibility (notebook; in progress)
+  environment.yml      conda env with the tools used outside the pipeline
+  01_data/             Step 1: sample table, download script
+  02_pipeline/         Step 2: nf-core/atacseq (and this run's MultiQC report)
+  03_differential/     Step 3: differential peaks (notebook)
+  04_sequence_models/  Step 4: sequence models of accessibility (notebook)
 ```
 
 ---
@@ -244,7 +258,8 @@ everything. Step 3 saves the differential peaks as BED files to drag into this s
 
 ### Check quality with MultiQC
 
-Open `results/multiqc/narrow_peak/multiqc_report.html` in a browser. Section names start with a level:
+Open `results/multiqc/narrow_peak/multiqc_report.html` in a browser (this run's report is also at
+`02_pipeline/multiqc_report.html`). Section names start with a level:
 **LIB** (one FASTQ pair), **MERGED LIB** (one replicate) and **MERGED REP** (replicates merged). Here each
 replicate is one FASTQ pair, so LIB and MERGED LIB repeat each other. Most of what matters is in MERGED LIB,
 filtered:
@@ -260,9 +275,11 @@ filtered:
 
 ## Step 3: Find differential peaks
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lizcodd/fastq2pheno_workshop/blob/main/03_differential/differential_atac.ipynb)
+
 `03_differential/differential_atac.ipynb` starts from the pipeline's reads per peak: DESeq2, checks for
 technical biases, copy number, whether ecDNA is more accessible per copy, motifs (HOMER), and BED files for IGV.
-It runs in Colab (Runtime → Change runtime type → R) and downloads its data (12 MB, built by
+It runs in Colab (the badge opens it with an R runtime) and downloads its data (12 MB, built by
 `03_differential/prep/prepare_data.ipynb`); on Engaging, use the `R (fastq2pheno)` kernel. About 5 minutes.
 
 Things that change read counts besides biology, and how to check them:
@@ -281,8 +298,11 @@ Before reading any list of top peaks, plot fold changes along the genome and aga
 
 ## Step 4: Sequence models of accessibility
 
-> **In progress.** The models are trained; their evaluation, motif results and the DM vs HSR comparison are still
-> being added.
+Step 3's HOMER found the AP-1 motif enriched in the peaks more open in HSR. Step 4 trains one chromBPNet model per
+line to ask whether those sites cause the opening: both models are given the same sequence, with sites removed or
+added, and their predictions compared.
 
-chromBPNet and seq2PRINT: setup, runs and outputs are in [04_ai_models/README.md](04_ai_models/README.md);
-the notebook is `04_ai_models/ai_models.ipynb`.
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lizcodd/fastq2pheno_workshop/blob/main/04_sequence_models/chrombpnet.ipynb)
+
+Training, evaluation and the notebook's data are in [04_sequence_models/README.md](04_sequence_models/README.md);
+the notebook is `04_sequence_models/chrombpnet.ipynb` (Colab, CPU only).
