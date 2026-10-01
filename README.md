@@ -98,11 +98,7 @@ pigz -p 8 SRR8236757_1.fastq SRR8236757_2.fastq
 the reads in each file and compares them with the archive's count (`read_pairs` in `samples.tsv`), stopping
 with `FAILED` if they differ. Once every run says OK, delete `sra/`.
 
-**Your own data** from the MIT BioMicroCenter arrives in a shared folder, with a copy command like
-`rsync -av /path/to/core/data /path/to/destination`. Run it in a batch job, into project space
-(`/orcd/data/<lab>/...`), not home. Rerunning `rsync` only copies what is missing, so it is safe to repeat.
-
-### Long jobs: submit them with sbatch
+### TIP! For long jobs: submit them with sbatch
 
 Downloads, copies and pipelines outlast a laptop's connection. Put the commands in a script with `#SBATCH`
 lines requesting resources, and submit it; SLURM runs it on a compute node and writes a log:
@@ -154,7 +150,7 @@ zcat SRR8236757_1.fastq.gz | head -400000 | grep -c CTGTCTCTTATACACATCT         
 ```
 
 These reads are up to 51 bases, many shorter, and contain no Tn5 adapter: the authors trimmed them before
-uploading. Reads straight from a sequencing core are untrimmed; the pipeline trims them either way.
+uploading.
 
 ---
 
@@ -168,7 +164,8 @@ Nextflow needs installing. For bulk ATAC-seq: [nf-core/atacseq](https://nf-co.re
 For each sample it trims adapters, aligns (BWA-MEM), marks duplicates, filters (mitochondrial reads, ENCODE's
 blacklist, duplicates, multi-mapping reads), makes coverage tracks (bigWig) and calls peaks (MACS2). It then
 builds consensus peaks across samples with a table of reads per peak per sample (the input to Step 3), and a
-MultiQC report. It does all this once per replicate and once with each line's replicates merged. Its
+MultiQC report. By default a consensus peak needs MACS2 to call it in only one sample, so the set includes weak
+peaks; Step 3 filters them by read count. It does all this once per replicate and once with each line's replicates merged. Its
 "differential" DESeq2 step only normalizes counts for a PCA; the test is Step 3.
 
 ### Inputs
@@ -206,7 +203,7 @@ in its `params` block instead, and the pipeline downloads them from AWS iGenomes
 module load miniforge/25.11.0-0 apptainer/1.5.2
 conda activate fastq2pheno
 
-export NXF_SINGULARITY_CACHEDIR=$PWD/containers   # container images, kept outside work/
+export NXF_SINGULARITY_CACHEDIR=$PWD/containers    # container images, kept outside work/
 export APPTAINER_CACHEDIR=$PWD/containers/tmp      # apptainer's download cache, out of the small home directory
 export NXF_SYNTAX_PARSER=v1                        # nf-core/atacseq 2.1.2 needs Nextflow's older parser
 
@@ -242,6 +239,21 @@ results/
   bwa/merged_replicate/                       <- the same, replicates merged ("mRp")
 ```
 
+### Check quality with MultiQC
+
+After the pipeline finishes, start by opening `results/multiqc/narrow_peak/multiqc_report.html` in a browser (for the workshop the completed report has also been copied to `02_pipeline/multiqc_report.html` so it can be viewed without rerunning the whole pipeline). Section names start with a level:
+
+**LIB** (one FASTQ pair), **MERGED LIB** (one replicate) and **MERGED REP** (replicates merged). Here each
+replicate is one FASTQ pair, so LIB and MERGED LIB repeat each other. Most of what matters is in MERGED LIB,
+filtered:
+
+1. **SAMtools / Picard**: reads aligned, duplicates, and what filtering removed.
+2. **Picard insert size**: a nucleosome ladder, with a peak under 100 bp (open DNA) and smaller ones at ~200
+   and ~400 bp (one and two nucleosomes).
+3. **deepTools**: signal concentration (fingerprint) and reads peaking at transcription start sites.
+4. **MACS2 peak count and FRiP** (fraction of reads in peaks): the headline quality measure.
+5. **DESeq2 PCA**: replicates of the same line should sit together.
+
 ### Look at the tracks in IGV
 
 The pipeline's IGV session only opens on the server. `make_igv_local.sh` packages the coverage tracks and peaks
@@ -255,21 +267,6 @@ bash make_igv_local.sh          # writes igv_local/ and igv_local.tar (1.1 GB)
 
 Coverage is scaled to reads per million, not corrected for copy number, so the *MYC* amplicon towers over
 everything. Step 3 saves the differential peaks as BED files to drag into this session.
-
-### Check quality with MultiQC
-
-Open `results/multiqc/narrow_peak/multiqc_report.html` in a browser (this run's report is also at
-`02_pipeline/multiqc_report.html`). Section names start with a level:
-**LIB** (one FASTQ pair), **MERGED LIB** (one replicate) and **MERGED REP** (replicates merged). Here each
-replicate is one FASTQ pair, so LIB and MERGED LIB repeat each other. Most of what matters is in MERGED LIB,
-filtered:
-
-1. **SAMtools / Picard**: reads aligned, duplicates, and what filtering removed.
-2. **Picard insert size**: a nucleosome ladder, with a peak under 100 bp (open DNA) and smaller ones at ~200
-   and ~400 bp (one and two nucleosomes).
-3. **deepTools**: signal concentration (fingerprint) and reads peaking at transcription start sites.
-4. **MACS2 peak count and FRiP** (fraction of reads in peaks): the headline quality measure.
-5. **DESeq2 PCA**: replicates of the same line should sit together.
 
 ---
 
